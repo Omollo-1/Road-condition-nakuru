@@ -1,0 +1,20 @@
+# Python and notebook runtime files
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+
+# Downloaded data, caches, model weights, and generated results
+road_condition_nakuru/data/osmnx_cache/
+road_condition_nakuru/data/rdd2022_yolo_subset/
+road_condition_nakuru/data/mapillary_images/
+road_condition_nakuru/*.pt
+road_condition_nakuru/models/*.pt
+road_condition_nakuru/outputs/*
+!road_condition_nakuru/outputs/.gitkeep

@@ -1,8 +1,9 @@
 # Road Condition Assessment — Nakuru Pilot
 
 A geospatial ML pipeline that pulls imagery for a Nakuru AOI, detects road damage
-(potholes, cracks), geolocates and scores road segments, validates against ground
-truth, and exports results for a road authority. Built for GEOSK 2026.
+(potholes, cracks), geolocates and scores road segments, optionally compares
+detections against a labeled ground-truth survey, and exports results for a road
+authority. Built for GEOSK 2026.
 
 ## Folder structure
 
@@ -10,8 +11,10 @@ truth, and exports results for a road authority. Built for GEOSK 2026.
 road_condition_nakuru/
 ├── README.md                    ← this file
 ├── requirements.txt              ← Python dependencies
-├── road_condition_pipeline.ipynb ← the main notebook — run this, top to bottom
-├── models/                       ← put YOLOv8_Small_RDD.pt (or your fine-tuned best.pt) here
+├── models/
+│   └── Nakuru_Road_Condition_Assessment.ipynb ← main notebook — run top to bottom
+├── scripts/
+│   └── download_rdd2022_subset.py ← capped, resumable RDD2022 subset downloader
 ├── data/                         ← ground-truth CSV and downloaded Mapillary images land here
 │   └── ground_truth_template.csv ← copy this to ground_truth_nakuru.csv and fill in
 └── outputs/                      ← exported GeoJSON/CSV results land here
@@ -20,43 +23,63 @@ road_condition_nakuru/
 ## How to run
 
 1. `pip install -r requirements.txt`
-2. Get a Google Earth Engine project: https://code.earthengine.google.com/
-3. Get a Mapillary access token: https://www.mapillary.com/dashboard/developers
-4. Download the pretrained detector into `models/`:
-   ```
-   curl -L -o models/YOLOv8_Small_RDD.pt \
-     https://raw.githubusercontent.com/oracl4/RoadDamageDetection/main/models/YOLOv8_Small_RDD.pt
-   ```
-5. Open `road_condition_pipeline.ipynb` and fill in `GEE_PROJECT_ID` and
-   `MAPILLARY_TOKEN` in Step 1. Run cells top to bottom.
+2. (Optional) Set `MAPILLARY_ACCESS_TOKEN` in the notebook environment to retrieve
+   street-level images. Without it, the notebook still produces the analysis
+   exports and marks unsurveyed roads as **Unknown**.
+3. (Optional) Copy `data/ground_truth_template.csv` to
+   `data/ground_truth_nakuru.csv`, replace the example rows with surveyed points,
+   and run the notebook's export section to calculate precision/recall.
+4. Download a capped RDD2022 pilot subset from the public Hugging Face mirror:
+   `python scripts/download_rdd2022_subset.py`. It fetches 2,500 training and
+   500 validation images individually, so it does not need the full 11.7 GB
+   Kaggle archive. The source mirror is an unofficial YOLO re-export; see the
+   generated `data/rdd2022_yolo_subset/SOURCE.txt` for attribution and licensing.
+   The subset is resumable and the download tool remaps the source's four
+   classes to this notebook's pothole/crack classes.
+5. (Optional) Set `GEE_PROJECT_ID` if Earth Engine layers are needed.
+6. Open `models/Nakuru_Road_Condition_Assessment.ipynb` and run cells top to
+   bottom. The notebook uses the downloaded subset automatically; set
+   `RDD2022_DATASET_DIR` to use a different local YOLO dataset.
+
+## Faster model training
+
+The default is a quick pilot configuration: 5 epochs, 512px images, and 5% of
+the training set. The model is initialized from YOLOv8 nano, uses automatic
+batch sizing on GPU, disables RAM image caching, and stops early if validation
+does not improve. The resulting weights are cached at
+`models/nakuru_rdd2022_best.pt`, so subsequent runs skip training. Increase
+`EPOCHS` or `TRAINING_FRACTION` in notebook section 5c for a more thorough run.
 
 ## Notebook steps
 
 | Step | What it does |
 |---|---|
 | 1 | Setup — installs, imports, config |
-| 2 | Earth Engine auth + Nakuru County AOI + Sentinel-2 context layer |
+| 2 | Optional Earth Engine setup + Nakuru City AOI |
 | 3 | Road network for the Nakuru city pilot area (OSMnx) |
 | 4 | Street-level imagery pull (Mapillary) |
-| 5 | *(Optional)* Fine-tune the detector on your own labeled set — best in Colab |
-| 6 | Load the detection model (fine-tuned or pretrained) |
+| 5 | Prepare RDD2022 and quick-fine-tune YOLO (cached on later runs) |
+| 6 | Evaluate the detector and display training plots |
 | 7 | Run inference over the pulled images |
 | 8 | Geolocate detections onto the road network |
 | 9 | Score road segments (condition class) |
 | 10 | Visualize results on an interactive map |
-| 11 | Ground-truth validation (precision/recall) |
-| 12 | Export outputs (GeoJSON + CSV) |
+| 11 | Optional ground-truth validation and export outputs |
 
-Step 5 is the only one that needs a GPU. Skip it entirely if you're fine using the
-pretrained RDD2022 weights as-is — Step 6 falls back to downloading them
-automatically.
+GPU training is strongly recommended; CPU mode uses a smaller batch and no
+data-loader workers. The notebook exports an explicit empty/unknown result when
+there is no Mapillary imagery rather than treating unsurveyed roads as good.
 
-## Notes
+## Outputs
 
-- Satellite imagery (used in Step 2) isn't fine-grained enough to detect individual
-  potholes — that's what the street-level Mapillary pipeline (Steps 4, 7) is for.
-  The satellite layer is for broader monitoring (vegetation encroachment, unpaved
-  road erosion) at the county scale.
-- Kenya's FAO GAUL *level 1* boundaries are the pre-2010 provinces, not the 47
-  counties — Step 2 queries *level 2* instead, which is where "Nakuru" actually
-  exists as a unit.
+The notebook writes these artifacts under `outputs/`:
+
+- `nakuru_road_condition.geojson` — segment conditions
+- `nakuru_road_alerts.geojson` and `nakuru_yolo_detections.csv` — hazard results
+- `nakuru_condition_summary.csv` and `nakuru_severity_summary.csv` — summaries
+- `nakuru_ground_truth_validation.json` — optional labeled-point precision,
+  recall, and F1 (uses a configurable 25m location-match radius)
+- `nakuru_model_metrics.json` and `nakuru_analysis_summary.json` — model and run
+  metrics
+- `nakuru_road_condition_map.html` and `nakuru_live_street_viewer.html` — maps
+- `training/` — Ultralytics training curves, evaluation plots, and weights

@@ -11,3 +11,6 @@ pandas
 numpy
 pillow
 pyyaml
+matplotlib
+huggingface_hub
+jupyterlab
