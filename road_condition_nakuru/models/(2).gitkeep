@@ -1,0 +1,3 @@
+Place model weights here:
+- YOLOv8_Small_RDD.pt (pretrained, see README for download command)
+- best.pt (your fine-tuned weights, if you ran Step 5)
