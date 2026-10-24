@@ -10,6 +10,17 @@ network, and exports maps and analysis tables.
 The same notebook can be run from a local Python environment, Jupyter, or
 Google Colab. GPU acceleration is recommended for model training.
 
+## Final project status
+
+This repository contains the Nakuru road-condition dashboard and monitoring
+workflow in a validated, repo-ready state. The deliverable at
+`road_condition_nakuru/dashboard.html` renders a GIS-style overview of the
+Nakuru road network, includes the road opacity control, shows good/moderate/
+poor/unknown status overlays, and presents hazard data with defect metadata such
+as missing signage, missing road lights, and missing guardrails. The dashboard
+has been checked in the browser and the main KPI cards, map panel, filter
+controls, and defect queue are all present and operational.
+
 ## Repository layout
 
 - [`road_condition_nakuru/models/Nakuru_Road_Condition_Assessment.ipynb`](road_condition_nakuru/models/Nakuru_Road_Condition_Assessment.ipynb) —
