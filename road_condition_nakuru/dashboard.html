@@ -1425,10 +1425,19 @@
           maxZoom: 19
         }).setView(CENTER, 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors',
-          maxZoom: 19
-        }).addTo(map);
+        const baseLayers = {
+          'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+          }),
+          'Esri World Imagery': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 19
+          })
+        };
+
+        baseLayers['OpenStreetMap'].addTo(map);
+        L.control.layers(baseLayers, null, { position: 'bottomright' }).addTo(map);
 
         const aoiLayer = L.rectangle(AOI_BOUNDS, {
           color: '#67d0ff',
