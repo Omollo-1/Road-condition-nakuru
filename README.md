@@ -127,15 +127,18 @@ layer is needed.
 Generated artifacts are written under `road_condition_nakuru/outputs/`:
 
 - Road-condition GeoJSON and CSV summaries.
-- Hazard detections and alerts in GeoJSON/CSV.
+- Raw hazard detections, deduplicated defect instances, and alerts in GeoJSON/CSV.
 - Interactive road-condition and street-view HTML maps.
-- Model metrics, run summary, and optional ground-truth validation metrics.
+- Model metrics, run summary, a stratified 120-segment field sample, and optional
+  ground-truth confusion matrices and validation metrics.
 - Ultralytics training curves, evaluation plots, and model weights under
   `outputs/training/`.
 
 Outputs depend on available road data and imagery; Mapillary-derived results
 require a valid token and image coverage in the pilot area. Ground-truth
-precision/recall is only calculated when a completed survey file is supplied.
+metrics are only calculated when a completed survey file is supplied. The
+segment-condition survey workflow and output files are documented in the
+subproject README.
 See the notebook and the subproject README for exact filenames and validation
 details.
 

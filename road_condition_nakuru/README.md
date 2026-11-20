@@ -16,7 +16,8 @@ road_condition_nakuru/
 ├── scripts/
 │   └── download_rdd2022_subset.py ← capped, resumable RDD2022 subset downloader
 ├── data/                         ← ground-truth CSV and downloaded Mapillary images land here
-│   └── ground_truth_template.csv ← copy this to ground_truth_nakuru.csv and fill in
+│   ├── ground_truth_template.csv ← optional point-level defect survey
+│   └── ground_truth_segment_template.csv ← segment condition survey schema
 └── outputs/                      ← exported GeoJSON/CSV results land here
 ```
 
@@ -25,7 +26,8 @@ road_condition_nakuru/
 1. `pip install -r requirements.txt`
 2. (Optional) Set `MAPILLARY_ACCESS_TOKEN` in the notebook environment to retrieve
    street-level images. Without it, the notebook still produces the analysis
-   exports and marks unsurveyed roads as **Unknown**.
+   exports and marks roads with no defect evidence as **Unassessed**, not Good.
+   Segment exports include imagery count and latest capture date.
 3. (Optional) Copy `data/ground_truth_template.csv` to
    `data/ground_truth_nakuru.csv`, replace the example rows with surveyed points,
    and run the notebook's export section to calculate precision/recall.
@@ -40,6 +42,24 @@ road_condition_nakuru/
 6. Open `models/Nakuru_Road_Condition_Assessment.ipynb` and run cells top to
    bottom. The notebook uses the downloaded subset automatically; set
    `RDD2022_DATASET_DIR` to use a different local YOLO dataset.
+
+## Field validation and duplicate defects
+
+After the notebook creates segment conditions, it exports a reproducible,
+stratified 120-segment field sample across OSM road classes and model condition
+bands to `outputs/nakuru_ground_truth_sample.csv`. Copy that file to
+`data/ground_truth_segment_survey.csv` and complete `observed_condition`
+(`Good`, `Moderate`, or `Poor`), `assessment_date`, and `assessor_id` after
+inspection. Re-run the notebook to produce raw-count and design-weighted
+confusion matrices. A sample smaller than 120 is produced only when the road
+network itself has fewer segments. The sample design is not field evidence;
+report metrics only after labels have been collected.
+
+Before segment summaries, detections are clustered by segment, defect type,
+location (8 m neighborhood), and camera heading (30-degree tolerance).
+Corroboration uses distinct Mapillary sequences when available, otherwise
+distinct image IDs. Raw detections remain available alongside the unique
+instance export for audit.
 
 ## Faster model training
 
@@ -75,8 +95,11 @@ there is no Mapillary imagery rather than treating unsurveyed roads as good.
 The notebook writes these artifacts under `outputs/`:
 
 - `nakuru_road_condition.geojson` — segment conditions
-- `nakuru_road_alerts.geojson` and `nakuru_yolo_detections.csv` — hazard results
+- `nakuru_road_alerts.geojson`, `nakuru_yolo_detections.csv`, and
+  `nakuru_unique_defect_instances.csv` — raw and deduplicated hazard results
 - `nakuru_condition_summary.csv` and `nakuru_severity_summary.csv` — summaries
+- `nakuru_ground_truth_sample.csv` and condition confusion-matrix CSV/JSON files
+  — stratified field sampling and optional segment-level validation
 - `nakuru_ground_truth_validation.json` — optional labeled-point precision,
   recall, and F1 (uses a configurable 25m location-match radius)
 - `nakuru_model_metrics.json` and `nakuru_analysis_summary.json` — model and run

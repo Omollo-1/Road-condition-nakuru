@@ -13,4 +13,5 @@ pillow
 pyyaml
 matplotlib
 huggingface_hub
+scikit-learn
 jupyterlab
